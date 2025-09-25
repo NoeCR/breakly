@@ -53,6 +53,13 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, methodsChannelName)
                 .setMethodCallHandler { call: MethodCall, result: MethodChannel.Result ->
                     when (call.method) {
+                        "hasDndAccess" -> {
+                            result.success(hasDndAccess())
+                        }
+                        "setDoNotDisturb" -> {
+                            val enable = call.argument<Boolean>("enable") ?: false
+                            result.success(setDoNotDisturb(enable))
+                        }
                         "toggleRinger" -> {
                             val mode = call.argument<String>("mode")
                             result.success(toggleRinger(mode))
@@ -142,6 +149,33 @@ class MainActivity : FlutterActivity() {
                         "timestamp" to System.currentTimeMillis()
                 )
         eventSink?.success(payload)
+    }
+
+    private fun hasDndAccess(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val nm =
+                    applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as
+                            NotificationManager
+            nm.isNotificationPolicyAccessGranted
+        } else false
+    }
+
+    private fun setDoNotDisturb(enable: Boolean): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val nm =
+                    applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as
+                            NotificationManager
+            if (!nm.isNotificationPolicyAccessGranted) return false
+            try {
+                nm.setInterruptionFilter(
+                        if (enable) NotificationManager.INTERRUPTION_FILTER_NONE
+                        else NotificationManager.INTERRUPTION_FILTER_ALL
+                )
+                true
+            } catch (e: Exception) {
+                false
+            }
+        } else false
     }
 
     private fun toggleRinger(mode: String?): Boolean {

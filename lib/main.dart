@@ -291,6 +291,14 @@ class _MyHomePageState extends State<MyHomePage> {
     await _updateMinutesTarget(30);
   }
 
+  String _formatEndTime() {
+    final base = _activatedAt ?? DateTime.now();
+    final end = base.add(Duration(minutes: _minutesTarget));
+    final hh = end.hour.toString().padLeft(2, '0');
+    final mm = end.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
+  }
+
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -319,13 +327,28 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _disableAll() async {
     try {
-      await _methods.invokeMethod('toggleRinger', {'mode': 'normal'});
-      // DND/Airplane cannot be toggled programáticamente en Android moderno sin privilegios; abrimos settings.
-      if (_dnd) {
-        await _methods.invokeMethod('openDoNotDisturbSettings');
+      // Preferimos desactivar DND directamente si hay permiso; si no, normalizamos timbre
+      final hasAccess =
+          await _methods.invokeMethod('hasDndAccess') as bool? ?? false;
+      if (hasAccess) {
+        await _methods.invokeMethod('setDoNotDisturb', {'enable': false});
       }
-      if (_airplane) {
-        await _methods.invokeMethod('openAirplaneSettings');
+      await _methods.invokeMethod('toggleRinger', {'mode': 'normal'});
+    } catch (_) {}
+  }
+
+  Future<void> _enablePreferred() async {
+    try {
+      final hasAccess =
+          await _methods.invokeMethod('hasDndAccess') as bool? ?? false;
+      if (hasAccess) {
+        await _methods.invokeMethod('setDoNotDisturb', {'enable': true});
+      } else {
+        // Fallback: silenciar y abrir ajustes para conceder permiso DND
+        try {
+          await _methods.invokeMethod('toggleRinger', {'mode': 'silent'});
+        } catch (_) {}
+        await _methods.invokeMethod('openDoNotDisturbSettings');
       }
     } catch (_) {}
   }
@@ -372,12 +395,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
-          // Overlay oscuro para mejorar contraste del texto
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(_isAnyModeActive ? 0.45 : 0.35),
+          // Overlay oscuro solo cuando NO está activo (no afectar al video)
+          if (!_isAnyModeActive)
+            Positioned.fill(
+              child: Container(color: Colors.black.withOpacity(0.35)),
             ),
-          ),
           // Contador arriba
           if (_isAnyModeActive)
             Positioned(
@@ -421,13 +443,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       if (_isAnyModeActive) {
                         await _disableAll();
                       } else {
-                        try {
-                          await _methods.invokeMethod('toggleRinger', {
-                            'mode': 'silent',
-                          });
-                        } catch (_) {}
-                        await _methods.invokeMethod('openDoNotDisturbSettings');
-                        await _methods.invokeMethod('openAirplaneSettings');
+                        await _enablePreferred();
                       }
                     },
                     child: Text(
@@ -450,12 +466,24 @@ class _MyHomePageState extends State<MyHomePage> {
                             color: Colors.white70,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Text(
-                            '${_minutesTarget}m',
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          child: Row(
+                            children: [
+                              Text(
+                                '${_minutesTarget}m',
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'hasta ${_formatEndTime()}',
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -572,10 +600,7 @@ class _ClearChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white60),
         ),
-        child: const Text(
-          'X',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
+        child: const Icon(Icons.close, color: Colors.white, size: 18),
       ),
     );
   }
