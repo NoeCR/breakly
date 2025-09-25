@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Breakly',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Breakly'),
     );
   }
 }
@@ -77,6 +77,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _videoController =
         VideoPlayerController.asset('assets/black_hole.mp4')
           ..setLooping(true)
+          ..setVolume(0)
           ..initialize().then((_) {
             if (mounted) setState(() {});
           });
@@ -163,9 +164,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // than having to individually change instances of widgets.
     // Video se usa como fondo cuando está activo
     final idleBg = const DecorationImage(
-      image: NetworkImage(
-        'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
-      ),
+      image: AssetImage('assets/canyon.avif'),
       fit: BoxFit.cover,
     );
 
@@ -178,10 +177,6 @@ class _MyHomePageState extends State<MyHomePage> {
     final elapsedStr = _elapsed.toString().split('.').first.padLeft(8, '0');
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
       body: Stack(
         children: [
           if (!_isAnyModeActive)
@@ -201,13 +196,21 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isAnyModeActive)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
+          // Overlay oscuro para mejorar contraste del texto
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(_isAnyModeActive ? 0.45 : 0.35),
+            ),
+          ),
+          // Contador arriba
+          if (_isAnyModeActive)
+            Positioned(
+              left: 16,
+              right: 16,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Center(
                     child: Text(
                       'Tiempo: $elapsedStr',
                       style: const TextStyle(
@@ -217,39 +220,54 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                   ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: buttonColor,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
+                ),
+              ),
+            ),
+          // Botón abajo y texto de estado
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 0,
+            child: SafeArea(
+              minimum: const EdgeInsets.fromLTRB(0, 0, 0, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: buttonColor,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                    ),
+                    onPressed: () async {
+                      if (_isAnyModeActive) {
+                        await _disableAll();
+                      } else {
+                        try {
+                          await _methods.invokeMethod('toggleRinger', {
+                            'mode': 'silent',
+                          });
+                        } catch (_) {}
+                        await _methods.invokeMethod('openDoNotDisturbSettings');
+                        await _methods.invokeMethod('openAirplaneSettings');
+                      }
+                    },
+                    child: Text(
+                      buttonText,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
-                  onPressed: () async {
-                    if (_isAnyModeActive) {
-                      await _disableAll();
-                    } else {
-                      // Activar todos: poner silencio y abrir settings para DND/avión
-                      try {
-                        await _methods.invokeMethod('toggleRinger', {
-                          'mode': 'silent',
-                        });
-                      } catch (_) {}
-                      await _methods.invokeMethod('openDoNotDisturbSettings');
-                      await _methods.invokeMethod('openAirplaneSettings');
-                    }
-                  },
-                  child: Text(
-                    buttonText,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  const SizedBox(height: 8),
+                  Text(
+                    _isAnyModeActive
+                        ? 'Modo sin interrupciones activo'
+                        : 'Modo sin interrupciones deshabilitado',
+                    style: const TextStyle(color: Colors.white),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'DND: ${_dnd ? 'ON' : 'OFF'} | Silencio: ${_ringer == 'silent' ? 'ON' : 'OFF'} | Avión: ${_airplane ? 'ON' : 'OFF'}',
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
