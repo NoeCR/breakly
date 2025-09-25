@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   runApp(const MyApp());
@@ -70,10 +74,16 @@ class _MyHomePageState extends State<MyHomePage> {
   Duration _elapsed = Duration.zero;
 
   VideoPlayerController? _videoController;
+  final FlutterLocalNotificationsPlugin _notifs =
+      FlutterLocalNotificationsPlugin();
+  int _minutesTarget = 30;
+  bool get _isCustomMinutes => !const {30, 60, 90}.contains(_minutesTarget);
 
   @override
   void initState() {
     super.initState();
+    _restoreSessionIfAny();
+    _initNotifications();
     _videoController =
         VideoPlayerController.asset('assets/black_hole.mp4')
           ..setLooping(true)
@@ -98,11 +108,35 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> _initNotifications() async {
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettings = InitializationSettings(android: androidInit);
+    await _notifs.initialize(initSettings);
+    tz.initializeTimeZones();
+    final prefs = await SharedPreferences.getInstance();
+    _minutesTarget = prefs.getInt('minutes_target') ?? 30;
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _restoreSessionIfAny() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final millis = prefs.getInt('active_session_started_at');
+      if (millis != null) {
+        _activatedAt = DateTime.fromMillisecondsSinceEpoch(millis);
+        _startTimer();
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
+  }
+
   void _handleActiveState(bool active) {
     if (active) {
       if (_activatedAt == null) {
         _activatedAt = DateTime.now();
         _startTimer();
+        _persistStart();
+        _scheduleEndNotification();
       }
       _videoController?.play();
     } else {
@@ -112,7 +146,149 @@ class _MyHomePageState extends State<MyHomePage> {
         _elapsed = Duration.zero;
       });
       _videoController?.pause();
+      _clearPersistedStart();
+      _cancelEndNotification();
     }
+  }
+
+  Future<void> _persistStart() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(
+        'active_session_started_at',
+        _activatedAt!.millisecondsSinceEpoch,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _clearPersistedStart() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('active_session_started_at');
+    } catch (_) {}
+  }
+
+  Future<void> _scheduleEndNotification() async {
+    try {
+      final now = DateTime.now();
+      final scheduled = now.add(Duration(minutes: _minutesTarget));
+      await _notifs.zonedSchedule(
+        1001,
+        'Tiempo cumplido',
+        'Has completado $_minutesTarget minutos en modo sin interrupciones',
+        tz.TZDateTime.from(scheduled, tz.local),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'breakly_session',
+            'Fin de sesión',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: null,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _cancelEndNotification() async {
+    try {
+      await _notifs.cancel(1001);
+    } catch (_) {}
+  }
+
+  Future<void> _updateMinutesTarget(int minutes) async {
+    setState(() {
+      _minutesTarget = minutes;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('minutes_target', minutes);
+    } catch (_) {}
+    // Si hay sesión activa, reprogramamos la notificación
+    if (_activatedAt != null) {
+      await _cancelEndNotification();
+      await _scheduleEndNotification();
+    }
+  }
+
+  Future<void> _showAddMinutesSheet() async {
+    final controller = TextEditingController(text: _minutesTarget.toString());
+    final value = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black87,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            top: 16,
+            left: 16,
+            right: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Minutos personalizados',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  hintText: 'Introduce minutos (entero)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      final parsed = int.tryParse(controller.text.trim());
+                      if (parsed != null && parsed > 0 && parsed < 24 * 60) {
+                        Navigator.of(ctx).pop(parsed);
+                      }
+                    },
+                    child: const Text('Aceptar'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (value != null) {
+      await _updateMinutesTarget(value);
+    }
+  }
+
+  Future<void> _clearCustomDuration() async {
+    // Volver a presets mostrando 30/60/90. Elegimos 30 por defecto.
+    await _updateMinutesTarget(30);
   }
 
   void _startTimer() {
@@ -223,7 +399,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
-          // Botón abajo y texto de estado
+          // Botón abajo, selector de duración y texto de estado
           Positioned(
             left: 16,
             right: 16,
@@ -259,18 +435,147 @@ class _MyHomePageState extends State<MyHomePage> {
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _isAnyModeActive
-                        ? 'Modo sin interrupciones activo'
-                        : 'Modo sin interrupciones deshabilitado',
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  const SizedBox(height: 12),
+                  // Selector de duración o badge de personalizado
+                  if (_isCustomMinutes)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white70,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            '${_minutesTarget}m',
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _ClearChip(onClear: _clearCustomDuration),
+                      ],
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _DurationChip(
+                          label: '30m',
+                          selected: _minutesTarget == 30,
+                          onTap: () => _updateMinutesTarget(30),
+                        ),
+                        const SizedBox(width: 8),
+                        _DurationChip(
+                          label: '60m',
+                          selected: _minutesTarget == 60,
+                          onTap: () => _updateMinutesTarget(60),
+                        ),
+                        const SizedBox(width: 8),
+                        _DurationChip(
+                          label: '90m',
+                          selected: _minutesTarget == 90,
+                          onTap: () => _updateMinutesTarget(90),
+                        ),
+                        const SizedBox(width: 8),
+                        _AddDurationChip(onAdd: _showAddMinutesSheet),
+                      ],
+                    ),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DurationChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _DurationChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white70 : Colors.white24,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white60),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.black87 : Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddDurationChip extends StatelessWidget {
+  final Future<void> Function() onAdd;
+
+  const _AddDurationChip({required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onAdd,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white24,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white60),
+        ),
+        child: const Text(
+          'Add',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+}
+
+class _ClearChip extends StatelessWidget {
+  final Future<void> Function() onClear;
+
+  const _ClearChip({required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onClear,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white24,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white60),
+        ),
+        child: const Text(
+          'X',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
