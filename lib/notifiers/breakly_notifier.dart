@@ -43,6 +43,9 @@ class BreaklyNotifier extends StateNotifier<AppState> {
       await _notificationService.initialize();
       await _sessionSyncService.initialize();
 
+      // Establecer el callback para obtener el estado actual
+      _sessionSyncService.setStateCallback(() => state);
+
       // Intentar sincronizar con sesión remota al inicio
       final restoredState = await _sessionSyncService.syncOnStartup(state);
       if (restoredState != null) {
@@ -114,7 +117,7 @@ class BreaklyNotifier extends StateNotifier<AppState> {
 
         // Sincronizar con remoto
         _sessionSyncService.syncCurrentState(state);
-        _sessionSyncService.startPeriodicSync(state);
+        _sessionSyncService.startPeriodicSync();
       }
       // Reproducir video cuando se activa
       _onVideoStateChanged?.call(true);
