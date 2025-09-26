@@ -192,9 +192,16 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
                       ? payload.oldRecord
                       : payload.newRecord;
 
+              // Validar que sessionData no esté vacío
+              if (sessionData.isEmpty) {
+                // Ignorar eventos con datos vacíos
+                return;
+              }
+
               final session = RemoteSessionData.fromSupabaseJson(sessionData);
               controller.add(session);
             } catch (e) {
+              // Capturar errores específicos de parsing o datos inválidos
               controller.addError(
                 SyncException(
                   'Error al procesar cambio de sesión: ${e.toString()}',
@@ -240,6 +247,12 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
                   payload.eventType == PostgresChangeEvent.delete
                       ? payload.oldRecord
                       : payload.newRecord;
+
+              // Validar que sessionData no esté vacío
+              if (sessionData.isEmpty) {
+                // Ignorar eventos con datos vacíos
+                return;
+              }
 
               final session = RemoteSessionData.fromSupabaseJson(sessionData);
 
