@@ -1,0 +1,151 @@
+---
+alwaysApply: true
+---
+
+
+# 🟢 Clean & Maintainable Flutter Architecture
+
+## 📜 General Principle
+> **Every project component must have a single, well-defined responsibility (SRP), be properly isolated, and clearly express its purpose at first glance.**  
+> The architecture should promote **scalability, maintainability, readability, and testability**.
+
+This rule **must always be applied** when developing new features, extending existing functionality, or refactoring code.
+
+---
+
+## 📂 Recommended Project Structure
+
+Organize the project **by features**.  
+Each feature should have its own subfolders to separate concerns:
+
+
+### Folder Responsibilities
+- **models/** → Pure data classes (e.g., DTOs, entities, value objects).
+- **interfaces/** → Contracts defining the behavior of services, repositories, or data sources.
+- **services/** → Implementations of business logic and data persistence (e.g., API calls, Hive/Firestore integration).
+- **notifiers/** → State management using `StateNotifier` / `Notifier` (Riverpod recommended).
+- **pages/** → Full-screen UI compositions that depend on notifiers.
+- **widgets/** → Reusable UI components without business logic.
+- **bottom_sheets/** → Reusable modal components (e.g., `CustomAppBottomSheet`).
+- **routes/** → Centralized route and navigation definitions.
+
+---
+
+## 📐 Core Principles
+
+### 1. **Single Responsibility Principle (SRP)**
+- Each class, function, and file must do **only one thing**.
+- Do **not mix** business logic with presentation code.
+
+---
+
+### 2. **Separation of Concerns**
+- **Services** → handle data retrieval and business rules.  
+- **Notifiers** → manage and expose state to the UI.  
+- **Widgets/Pages** → focus solely on rendering data and user interaction.
+
+---
+
+### 3. **Dependency Inversion**
+- Depend on **interfaces**, not on concrete implementations.
+- Example: inject `PurchaseRepository` interface into a notifier or service instead of using the concrete implementation directly.
+
+---
+
+### 4. **Prefer Immutability**
+- Make models and states **immutable** where possible.
+- Use `copyWith()` to produce new state or data objects.
+- Reduces side-effects and simplifies debugging.
+
+---
+
+### 5. **Reusability and Composition**
+- Build **small, composable widgets** instead of large, monolithic components.
+- Reuse common components such as buttons, banners, and product cards in the `widgets` folder.
+
+---
+
+### 6. **Keep Business Logic Out of the UI**
+- Avoid putting data manipulation, validation, or networking code inside widgets or pages.
+- Widgets should only **render data** and react to user interactions.
+
+---
+
+### 7. **Clear and Consistent Naming**
+- Use meaningful names that communicate the component’s responsibility.
+  - ✅ `PurchaseService`, `BatchPurchaseNotifier`, `CartItemModel`
+  - ❌ `DataHandler`, `Utils`, or ambiguous abbreviations.
+
+---
+
+### 8. **Extensibility and Scalability**
+- New features should be easy to add **without breaking existing code**.
+- Extend the system by adding new services, notifiers, or models rather than modifying existing ones unnecessarily.
+
+---
+
+### 9. **Testing-Friendly Design**
+- Decoupled services, notifiers, and models make it straightforward to write **unit tests** and **integration tests**.
+- The UI should be testable in isolation from business logic.
+
+---
+
+## 🔎 Example: Batch Purchases Feature
+
+A properly structured feature for **Batch Purchases** could look like this:
+
+
+- **Model** → `BatchPurchaseModel`  
+  Stores data such as `label`, `createdAt`, `products`, `lastUsedAt`.
+
+- **Interface** → `BatchPurchaseRepository`  
+  Defines operations like `fetchAll`, `addBatch`, `updateBatch`, `deleteBatch`.
+
+- **Service** → `BatchPurchaseService`  
+  Implements persistence using Hive and optionally synchronizes with a remote source.
+
+- **Notifier** → `BatchPurchaseNotifier`  
+  Exposes application state (list of batches, loading states, errors).
+
+- **Widgets** → `BatchPurchaseCard`  
+  Renders a single batch purchase in a list.
+
+- **Page** → `BatchPurchasePage`  
+  Displays the list of all saved batches and connects to the notifier.
+
+- **Bottom Sheet** → `BatchPurchaseSelectorSheet`  
+  Allows selecting products to add to a batch purchase with a searchable modal UI.
+
+---
+
+## 🚫 Common Pitfalls to Avoid
+- ❌ Mixing business logic and UI code.  
+- ❌ Writing massive “god classes” that handle unrelated responsibilities.  
+- ❌ Accessing databases (Hive, Firestore, etc.) directly in widgets or pages.  
+- ❌ Using vague or inconsistent naming conventions.  
+- ❌ Skipping interfaces, making testing and swapping implementations harder.
+
+---
+
+## ✅ Summary for Contributors
+When adding or modifying code:
+1. Identify the **type of component** (model, service, notifier, widget, etc.).
+2. Place it in the **correct folder** within the corresponding feature.
+3. Ensure it follows **SRP** and does **not mix concerns**.
+4. Use **interfaces** to abstract dependencies.
+5. Keep **UI components purely presentational**.
+6. Write **tests** for business logic whenever possible.
+
+---
+
+## 🏗 Benefits of This Architecture
+- 📦 **Modular & Scalable** — New features can be added easily.
+- 🔍 **Readable & Maintainable** — Clear separation of layers.
+- ✅ **Testable** — Easy to test services and state without UI dependencies.
+- 🔄 **Replaceable** — Swap out data sources or services with minimal code changes.
+- 🚀 **Future-Proof** — Supports growth and complexity over time.
+
+---
+
+> Following this rule ensures a **clean, maintainable, and professional-grade Flutter application**, suitable for teams and long-term projects.
+
