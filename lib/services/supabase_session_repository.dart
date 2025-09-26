@@ -282,7 +282,6 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
                   (s) => s.sessionId == session.sessionId,
                 );
               }
-
               controller.add(List.from(activeSessions));
             } catch (e) {
               controller.addError(
