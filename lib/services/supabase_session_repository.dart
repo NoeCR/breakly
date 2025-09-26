@@ -186,9 +186,7 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
           ),
           callback: (payload) {
             try {
-              final session = RemoteSessionData.fromSupabaseJson(
-                payload.newRecord,
-              );
+              final session = RemoteSessionData.fromSupabaseJson(payload.newRecord);
               controller.add(session);
             } catch (e) {
               controller.addError(
@@ -231,10 +229,7 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
           ),
           callback: (payload) {
             try {
-              final session = RemoteSessionData.fromSupabaseJson(
-                payload.newRecord,
-              );
-
+              final session = RemoteSessionData.fromSupabaseJson(payload.newRecord);
               // Filtrar solo sesiones activas
               if (session.isActive) {
                 switch (payload.eventType) {
@@ -274,7 +269,6 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
                   (s) => s.sessionId == session.sessionId,
                 );
               }
-
               controller.add(List.from(activeSessions));
             } catch (e) {
               controller.addError(
