@@ -24,6 +24,9 @@ class SessionSyncService {
   String? _currentDeviceId;
   String? _currentSessionId;
 
+  /// Callback para obtener el estado actual del notifier
+  AppState Function()? _getCurrentStateCallback;
+
   /// Inicializa el servicio de sincronización
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -34,6 +37,11 @@ class SessionSyncService {
     // Verificar que el repositorio de preferencias esté disponible
     // (esto evita el warning de campo no usado)
     _preferencesRepository.toString();
+  }
+
+  /// Establece el callback para obtener el estado actual
+  void setStateCallback(AppState Function() getCurrentState) {
+    _getCurrentStateCallback = getCurrentState;
   }
 
   /// Sincroniza el estado local con el remoto al iniciar la app
@@ -78,8 +86,13 @@ class SessionSyncService {
   void startPeriodicSync() {
     _syncTimer?.cancel();
     _syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      // El estado actual se obtendrá desde el notifier cuando sea necesario
-      // Esto evita capturar estado obsoleto en el closure
+      // Obtener el estado actual y sincronizarlo
+      if (_getCurrentStateCallback != null) {
+        final currentState = _getCurrentStateCallback!();
+        if (currentState.isSessionActive) {
+          syncCurrentState(currentState);
+        }
+      }
     });
   }
 

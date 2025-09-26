@@ -186,9 +186,13 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
           ),
           callback: (payload) {
             try {
-              final session = RemoteSessionData.fromSupabaseJson(
-                payload.newRecord,
-              );
+              // Para eventos de eliminación, usar oldRecord; para otros eventos, usar newRecord
+              final sessionData =
+                  payload.eventType == PostgresChangeEvent.delete
+                      ? payload.oldRecord
+                      : payload.newRecord;
+
+              final session = RemoteSessionData.fromSupabaseJson(sessionData);
               controller.add(session);
             } catch (e) {
               controller.addError(
@@ -231,9 +235,13 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
           ),
           callback: (payload) {
             try {
-              final session = RemoteSessionData.fromSupabaseJson(
-                payload.newRecord,
-              );
+              // Para eventos de eliminación, usar oldRecord; para otros eventos, usar newRecord
+              final sessionData =
+                  payload.eventType == PostgresChangeEvent.delete
+                      ? payload.oldRecord
+                      : payload.newRecord;
+
+              final session = RemoteSessionData.fromSupabaseJson(sessionData);
 
               // Filtrar solo sesiones activas
               if (session.isActive) {

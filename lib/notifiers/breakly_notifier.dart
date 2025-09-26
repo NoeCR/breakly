@@ -43,6 +43,9 @@ class BreaklyNotifier extends StateNotifier<AppState> {
       await _notificationService.initialize();
       await _sessionSyncService.initialize();
 
+      // Establecer el callback para obtener el estado actual
+      _sessionSyncService.setStateCallback(() => state);
+
       // Intentar sincronizar con sesión remota al inicio
       final restoredState = await _sessionSyncService.syncOnStartup(state);
       if (restoredState != null) {
