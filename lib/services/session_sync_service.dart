@@ -75,12 +75,11 @@ class SessionSyncService {
   }
 
   /// Inicia la sincronización automática periódica
-  void startPeriodicSync(AppState currentState) {
-    if (!currentState.isSessionActive) return;
-
+  void startPeriodicSync() {
     _syncTimer?.cancel();
     _syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      syncCurrentState(currentState);
+      // El estado actual se obtendrá desde el notifier cuando sea necesario
+      // Esto evita capturar estado obsoleto en el closure
     });
   }
 

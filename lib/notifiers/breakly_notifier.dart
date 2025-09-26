@@ -114,7 +114,7 @@ class BreaklyNotifier extends StateNotifier<AppState> {
 
         // Sincronizar con remoto
         _sessionSyncService.syncCurrentState(state);
-        _sessionSyncService.startPeriodicSync(state);
+        _sessionSyncService.startPeriodicSync();
       }
       // Reproducir video cuando se activa
       _onVideoStateChanged?.call(true);

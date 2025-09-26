@@ -9,7 +9,7 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
   SupabaseSessionRepository() : _client = SupabaseConfig.client;
 
   final SupabaseClient _client;
-  final Map<String, StreamSubscription> _subscriptions = {};
+  final Map<String, dynamic> _subscriptions = {};
   SyncStatus _currentSyncStatus = SyncStatus.notInitialized;
 
   @override
@@ -172,32 +172,41 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
   @override
   Stream<RemoteSessionData> watchSession(String sessionId) {
     final controller = StreamController<RemoteSessionData>.broadcast();
+    final channel = _client.channel('session_$sessionId');
 
-    final subscription = _client
-        .from('sessions')
-        .stream(primaryKey: ['id'])
-        .listen(
-          (data) {
-            if (data.isNotEmpty) {
-              final session = RemoteSessionData.fromSupabaseJson(data.first);
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'sessions',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'session_id',
+            value: sessionId,
+          ),
+          callback: (payload) {
+            try {
+              final session = RemoteSessionData.fromSupabaseJson(
+                payload.newRecord,
+              );
               controller.add(session);
+            } catch (e) {
+              controller.addError(
+                SyncException(
+                  'Error al procesar cambio de sesión: ${e.toString()}',
+                  originalError: e,
+                ),
+              );
             }
           },
-          onError: (error) {
-            controller.addError(
-              SyncException(
-                'Error en stream de sesión: ${error.toString()}',
-                originalError: error,
-              ),
-            );
-          },
-        );
+        )
+        .subscribe();
 
-    _subscriptions['session_$sessionId'] = subscription;
+    _subscriptions['session_$sessionId'] = channel;
 
     // Cleanup cuando se cancele el stream
     controller.onCancel = () {
-      subscription.cancel();
+      channel.unsubscribe();
       _subscriptions.remove('session_$sessionId');
     };
 
@@ -207,33 +216,83 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
   @override
   Stream<List<RemoteSessionData>> watchActiveSessions(String deviceId) {
     final controller = StreamController<List<RemoteSessionData>>.broadcast();
+    final channel = _client.channel('active_sessions_$deviceId');
+    final List<RemoteSessionData> activeSessions = [];
 
-    final subscription = _client
-        .from('sessions')
-        .stream(primaryKey: ['id'])
-        .listen(
-          (data) {
-            final sessions =
-                data
-                    .map((json) => RemoteSessionData.fromSupabaseJson(json))
-                    .toList();
-            controller.add(sessions);
-          },
-          onError: (error) {
-            controller.addError(
-              SyncException(
-                'Error en stream de sesiones activas: ${error.toString()}',
-                originalError: error,
-              ),
-            );
-          },
-        );
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'sessions',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'device_id',
+            value: deviceId,
+          ),
+          callback: (payload) {
+            try {
+              final session = RemoteSessionData.fromSupabaseJson(
+                payload.newRecord,
+              );
 
-    _subscriptions['active_sessions_$deviceId'] = subscription;
+              // Filtrar solo sesiones activas
+              if (session.isActive) {
+                switch (payload.eventType) {
+                  case PostgresChangeEvent.insert:
+                  case PostgresChangeEvent.update:
+                    // Actualizar o agregar sesión activa
+                    final existingIndex = activeSessions.indexWhere(
+                      (s) => s.sessionId == session.sessionId,
+                    );
+                    if (existingIndex >= 0) {
+                      activeSessions[existingIndex] = session;
+                    } else {
+                      activeSessions.add(session);
+                    }
+                    break;
+                  case PostgresChangeEvent.delete:
+                    // Remover sesión de la lista
+                    activeSessions.removeWhere(
+                      (s) => s.sessionId == session.sessionId,
+                    );
+                    break;
+                  case PostgresChangeEvent.all:
+                    // Para el caso 'all', manejamos como update
+                    final existingIndex = activeSessions.indexWhere(
+                      (s) => s.sessionId == session.sessionId,
+                    );
+                    if (existingIndex >= 0) {
+                      activeSessions[existingIndex] = session;
+                    } else {
+                      activeSessions.add(session);
+                    }
+                    break;
+                }
+              } else {
+                // Si la sesión no está activa, removerla de la lista
+                activeSessions.removeWhere(
+                  (s) => s.sessionId == session.sessionId,
+                );
+              }
+
+              controller.add(List.from(activeSessions));
+            } catch (e) {
+              controller.addError(
+                SyncException(
+                  'Error al procesar cambio de sesiones activas: ${e.toString()}',
+                  originalError: e,
+                ),
+              );
+            }
+          },
+        )
+        .subscribe();
+
+    _subscriptions['active_sessions_$deviceId'] = channel;
 
     // Cleanup cuando se cancele el stream
     controller.onCancel = () {
-      subscription.cancel();
+      channel.unsubscribe();
       _subscriptions.remove('active_sessions_$deviceId');
     };
 
@@ -286,7 +345,11 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
   /// Limpia todas las suscripciones activas
   void dispose() {
     for (final subscription in _subscriptions.values) {
-      subscription.cancel();
+      if (subscription is StreamSubscription) {
+        subscription.cancel();
+      } else if (subscription is RealtimeChannel) {
+        subscription.unsubscribe();
+      }
     }
     _subscriptions.clear();
   }
