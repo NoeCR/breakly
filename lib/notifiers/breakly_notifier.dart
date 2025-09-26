@@ -87,16 +87,9 @@ class BreaklyNotifier extends StateNotifier<AppState> {
   }
 
   void _handleActiveState(bool active) {
-    if (kDebugMode) {
-      print('🔄 Device mode active state changed: $active');
-    }
-
     if (active) {
       if (!state.session.isActive) {
         final now = DateTime.now();
-        if (kDebugMode) {
-          print('▶️ Starting new session at ${now.toString()}');
-        }
         _notificationShown = false; // Reset notification flag
         state = state.copyWith(
           session: state.session.copyWith(activatedAt: now),
@@ -108,9 +101,6 @@ class BreaklyNotifier extends StateNotifier<AppState> {
       // Reproducir video cuando se activa
       _onVideoStateChanged?.call(true);
     } else {
-      if (kDebugMode) {
-        print('⏹️ Stopping session');
-      }
       _notificationShown = false; // Reset notification flag
       state = state.copyWith(
         session: state.session.copyWith(
@@ -139,11 +129,6 @@ class BreaklyNotifier extends StateNotifier<AppState> {
   }
 
   Future<void> _scheduleEndNotification() async {
-    if (kDebugMode) {
-      print(
-        '🔔 Scheduling end notification for ${state.session.minutesTarget} minutes',
-      );
-    }
     await _notificationService.scheduleEndNotification(
       state.session.minutesTarget,
     );
@@ -186,23 +171,13 @@ class BreaklyNotifier extends StateNotifier<AppState> {
 
   Future<void> _showImmediateNotification() async {
     try {
-      if (kDebugMode) {
-        print('🚀 Showing immediate notification via timer');
-      }
-
       // Cancelar la notificación programada para evitar duplicados
       await _cancelEndNotification();
 
       // Mostrar notificación inmediata
       await _notificationService.scheduleEndNotification(0);
-
-      if (kDebugMode) {
-        print('✅ Immediate notification shown successfully');
-      }
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error showing immediate notification: $e');
-      }
+      // Handle error silently
     }
   }
 

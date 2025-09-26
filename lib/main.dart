@@ -4,7 +4,6 @@ import 'package:breakly/widgets/clear_chip.dart';
 import 'package:breakly/widgets/duration_chip.dart';
 import 'package:breakly/widgets/alarm_permission_info.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 import 'package:breakly/notifiers/breakly_notifier.dart';
@@ -22,21 +21,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Breakly',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: const MyHomePage(title: 'Breakly'),
@@ -98,17 +82,8 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
   Future<void> _showAlarmPermissionInfo() async {
     final notifier = ref.read(breaklyNotifierProvider.notifier);
     final notificationsEnabled = await notifier.areNotificationsEnabled();
-    final exactAlarmsPermission = await notifier.checkExactAlarmsPermission();
 
-    if (kDebugMode) {
-      print('🔔 Notifications enabled: $notificationsEnabled');
-      print('🔍 Exact alarms permission: $exactAlarmsPermission');
-    }
-
-    // Verificar notificaciones pendientes
-    await notifier.checkPendingNotifications();
-
-    if ((!notificationsEnabled || !exactAlarmsPermission) && mounted) {
+    if (!notificationsEnabled && mounted) {
       showDialog(
         context: context,
         builder: (context) => const AlarmPermissionInfo(),
@@ -116,9 +91,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            '✅ Todos los permisos de notificaciones están habilitados',
-          ),
+          content: Text('✅ Las notificaciones están habilitadas'),
           backgroundColor: Colors.green,
         ),
       );
@@ -148,18 +121,6 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
             : 'Activar modo sin interrupciones';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Breakly'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.alarm),
-            onPressed: _showAlarmPermissionInfo,
-            tooltip: 'Verificar permisos de alarmas',
-          ),
-        ],
-      ),
       body: Stack(
         children: [
           if (!appState.isAnyModeActive)
@@ -296,6 +257,37 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
                       ],
                     ),
                 ],
+              ),
+            ),
+          ),
+          // Notification status button - positioned at top right, below status bar
+          Positioned(
+            top: 0,
+            right: 16,
+            child: SafeArea(
+              child: GestureDetector(
+                onTap: _showAlarmPermissionInfo,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.access_time_rounded,
+                    color: Colors.black87,
+                    size: 24,
+                  ),
+                ),
               ),
             ),
           ),

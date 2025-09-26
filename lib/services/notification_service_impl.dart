@@ -76,29 +76,9 @@ class NotificationServiceImpl implements NotificationService {
       if (androidImplementation != null) {
         // Request basic notification permission
         await androidImplementation.requestNotificationsPermission();
-
-        // Try to request exact alarms permission, but don't fail if not available
-        try {
-          await androidImplementation.requestExactAlarmsPermission();
-          if (kDebugMode) {
-            print('🔐 Exact alarms permission granted');
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            print(
-              '⚠️ Exact alarms permission not available, using inexact mode: $e',
-            );
-          }
-        }
-      }
-
-      if (kDebugMode) {
-        print('🔐 Notification permissions requested');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('⚠️ Could not request permissions: $e');
-      }
+      // Handle error silently
     }
   }
 
@@ -194,14 +174,8 @@ class NotificationServiceImpl implements NotificationService {
         print('⏰ Scheduled time: ${scheduled.toString()}');
       }
 
-      // Determine the best schedule mode based on available permissions
-      final scheduleMode = await _getBestScheduleMode();
-
-      // Si es una notificación inmediata (0 minutos), usar show en lugar de schedule
+      // Si es una notificación inmediata (0 minutos), usar show
       if (minutes == 0) {
-        if (kDebugMode) {
-          print('🚀 Showing immediate notification');
-        }
         await _notifications.show(
           1001,
           'Tiempo cumplido',
@@ -225,6 +199,7 @@ class NotificationServiceImpl implements NotificationService {
           ),
         );
       } else {
+        // Para notificaciones programadas, usar modo inexacto (más simple)
         await _notifications.zonedSchedule(
           1001,
           'Tiempo cumplido',
@@ -247,15 +222,11 @@ class NotificationServiceImpl implements NotificationService {
               channelShowBadge: true,
             ),
           ),
-          androidScheduleMode: scheduleMode,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: null,
         );
-      }
-
-      if (kDebugMode) {
-        print('✅ Notification scheduled successfully with mode: $scheduleMode');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -263,38 +234,6 @@ class NotificationServiceImpl implements NotificationService {
       }
       rethrow;
     }
-  }
-
-  Future<AndroidScheduleMode> _getBestScheduleMode() async {
-    try {
-      final androidImplementation =
-          _notifications
-              .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin
-              >();
-
-      if (androidImplementation != null) {
-        // Try to check if exact alarms are permitted
-        final canScheduleExactAlarms =
-            await androidImplementation.canScheduleExactNotifications();
-
-        if (canScheduleExactAlarms == true) {
-          if (kDebugMode) {
-            print('🎯 Using exact alarm mode');
-          }
-          return AndroidScheduleMode.exactAllowWhileIdle;
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('⚠️ Could not check exact alarm permissions: $e');
-      }
-    }
-
-    if (kDebugMode) {
-      print('⏰ Using inexact alarm mode');
-    }
-    return AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
   @override

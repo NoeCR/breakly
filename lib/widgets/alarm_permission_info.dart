@@ -20,7 +20,7 @@ class AlarmPermissionInfo extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Para que las notificaciones funcionen correctamente, necesitas:',
+              'Para que las notificaciones funcionen correctamente, necesitas habilitar las notificaciones:',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 8),
@@ -29,7 +29,6 @@ class AlarmPermissionInfo extends StatelessWidget {
               text:
                   'Habilitar notificaciones en Configuración > Aplicaciones > Breakly > Notificaciones',
             ),
-            _StepItem(step: '✓', text: 'Habilitar permisos de alarmas exactas'),
             SizedBox(height: 16),
             Text(
               'Pasos para habilitar:',
@@ -44,8 +43,7 @@ class AlarmPermissionInfo extends StatelessWidget {
               step: '2',
               text: 'Toca en "Permisos especiales" o "Permisos adicionales"',
             ),
-            _StepItem(step: '3', text: 'Busca "Alarmas y recordatorios"'),
-            _StepItem(step: '4', text: 'Activa el switch si está disponible'),
+            _StepItem(step: '3', text: 'Activa las notificaciones'),
             SizedBox(height: 16),
             Text(
               'Si el switch está deshabilitado:',
@@ -60,7 +58,6 @@ class AlarmPermissionInfo extends StatelessWidget {
               step: '•',
               text: 'Quita Breakly de la optimización de batería',
             ),
-            _StepItem(step: '•', text: 'Reinicia la aplicación'),
           ],
         ),
       ),
