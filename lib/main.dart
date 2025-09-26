@@ -3,12 +3,18 @@ import 'package:breakly/widgets/add_duration_chip.dart';
 import 'package:breakly/widgets/clear_chip.dart';
 import 'package:breakly/widgets/duration_chip.dart';
 import 'package:breakly/widgets/alarm_permission_info.dart';
+import 'package:breakly/config/supabase_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 import 'package:breakly/notifiers/breakly_notifier.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Supabase
+  await SupabaseConfig.initialize();
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -261,36 +267,38 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
             ),
           ),
           // Notification status button - positioned at top right, below status bar
-          Positioned(
-            top: 0,
-            right: 16,
-            child: SafeArea(
-              child: GestureDetector(
-                onTap: _showAlarmPermissionInfo,
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.access_time_rounded,
-                    color: Colors.black87,
-                    size: 24,
+          // Solo mostrar cuando NO está activo el modo DND
+          if (!appState.isAnyModeActive)
+            Positioned(
+              top: 0,
+              right: 16,
+              child: SafeArea(
+                child: GestureDetector(
+                  onTap: _showAlarmPermissionInfo,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.access_time_rounded,
+                      color: Colors.black87,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
