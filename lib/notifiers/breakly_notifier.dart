@@ -6,6 +6,8 @@ import '../models/device_mode_state.dart';
 import '../interfaces/preferences_repository.dart';
 import '../interfaces/notification_service.dart';
 import '../interfaces/device_mode_service.dart';
+import '../interfaces/remote_session_repository.dart';
+import '../services/session_sync_service.dart';
 import 'providers.dart';
 
 class BreaklyNotifier extends StateNotifier<AppState> {
@@ -13,9 +15,11 @@ class BreaklyNotifier extends StateNotifier<AppState> {
     required PreferencesRepository preferencesRepository,
     required NotificationService notificationService,
     required DeviceModeService deviceModeService,
+    required SessionSyncService sessionSyncService,
   }) : _preferencesRepository = preferencesRepository,
        _notificationService = notificationService,
        _deviceModeService = deviceModeService,
+       _sessionSyncService = sessionSyncService,
        super(const AppState()) {
     _initialize();
   }
@@ -23,6 +27,7 @@ class BreaklyNotifier extends StateNotifier<AppState> {
   final PreferencesRepository _preferencesRepository;
   final NotificationService _notificationService;
   final DeviceModeService _deviceModeService;
+  final SessionSyncService _sessionSyncService;
 
   StreamSubscription<Map<String, dynamic>>? _deviceModeSubscription;
   Timer? _timer;
@@ -36,7 +41,16 @@ class BreaklyNotifier extends StateNotifier<AppState> {
 
     try {
       await _notificationService.initialize();
-      await _restoreSessionIfAny();
+      await _sessionSyncService.initialize();
+
+      // Intentar sincronizar con sesión remota al inicio
+      final restoredState = await _sessionSyncService.syncOnStartup(state);
+      if (restoredState != null) {
+        state = restoredState;
+      } else {
+        await _restoreSessionIfAny();
+      }
+
       await _loadMinutesTarget();
       _listenToDeviceModeChanges();
 
@@ -97,6 +111,10 @@ class BreaklyNotifier extends StateNotifier<AppState> {
         _startTimer();
         _persistStart();
         _scheduleEndNotification();
+
+        // Sincronizar con remoto
+        _sessionSyncService.syncCurrentState(state);
+        _sessionSyncService.startPeriodicSync(state);
       }
       // Reproducir video cuando se activa
       _onVideoStateChanged?.call(true);
@@ -111,6 +129,11 @@ class BreaklyNotifier extends StateNotifier<AppState> {
       _stopTimer();
       _clearPersistedStart();
       _cancelEndNotification();
+
+      // Finalizar sesión remota y detener sincronización
+      _sessionSyncService.endRemoteSession();
+      _sessionSyncService.stopPeriodicSync();
+
       // Pausar video cuando se desactiva
       _onVideoStateChanged?.call(false);
     }
@@ -165,6 +188,11 @@ class BreaklyNotifier extends StateNotifier<AppState> {
         state = state.copyWith(
           session: state.session.copyWith(elapsed: elapsed),
         );
+
+        // Sincronizar estado cada 30 segundos
+        if (elapsed.inSeconds % 30 == 0) {
+          _sessionSyncService.syncCurrentState(state);
+        }
       }
     });
   }
@@ -249,10 +277,25 @@ class BreaklyNotifier extends StateNotifier<AppState> {
     await _notificationService.checkPendingNotifications();
   }
 
-  @override
+  /// Obtiene el estado de sincronización
+  Future<SyncStatus> getSyncStatus() async {
+    return await _sessionSyncService.getSyncStatus();
+  }
+
+  /// Verifica si hay conectividad
+  Future<bool> isConnected() async {
+    return await _sessionSyncService.isConnected();
+  }
+
+  /// Fuerza una sincronización completa
+  Future<void> forceSync() async {
+    await _sessionSyncService.forceSync();
+  }
+
   void dispose() {
     _deviceModeSubscription?.cancel();
     _stopTimer();
+    _sessionSyncService.dispose();
     super.dispose();
   }
 }
@@ -264,5 +307,6 @@ final breaklyNotifierProvider =
         preferencesRepository: ref.watch(preferencesRepositoryProvider),
         notificationService: ref.watch(notificationServiceProvider),
         deviceModeService: ref.watch(deviceModeServiceProvider),
+        sessionSyncService: ref.watch(sessionSyncServiceProvider),
       );
     });
