@@ -19,6 +19,7 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$AppState {
   DeviceModeState get deviceMode => throw _privateConstructorUsedError;
   SessionState get session => throw _privateConstructorUsedError;
+  AlarmSettings get alarmSettings => throw _privateConstructorUsedError;
   bool get isVideoInitialized => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
   String? get error => throw _privateConstructorUsedError;
@@ -38,6 +39,7 @@ abstract class $AppStateCopyWith<$Res> {
   $Res call({
     DeviceModeState deviceMode,
     SessionState session,
+    AlarmSettings alarmSettings,
     bool isVideoInitialized,
     bool isLoading,
     String? error,
@@ -45,6 +47,7 @@ abstract class $AppStateCopyWith<$Res> {
 
   $DeviceModeStateCopyWith<$Res> get deviceMode;
   $SessionStateCopyWith<$Res> get session;
+  $AlarmSettingsCopyWith<$Res> get alarmSettings;
 }
 
 /// @nodoc
@@ -64,6 +67,7 @@ class _$AppStateCopyWithImpl<$Res, $Val extends AppState>
   $Res call({
     Object? deviceMode = null,
     Object? session = null,
+    Object? alarmSettings = null,
     Object? isVideoInitialized = null,
     Object? isLoading = null,
     Object? error = freezed,
@@ -80,6 +84,11 @@ class _$AppStateCopyWithImpl<$Res, $Val extends AppState>
                     ? _value.session
                     : session // ignore: cast_nullable_to_non_nullable
                         as SessionState,
+            alarmSettings:
+                null == alarmSettings
+                    ? _value.alarmSettings
+                    : alarmSettings // ignore: cast_nullable_to_non_nullable
+                        as AlarmSettings,
             isVideoInitialized:
                 null == isVideoInitialized
                     ? _value.isVideoInitialized
@@ -119,6 +128,16 @@ class _$AppStateCopyWithImpl<$Res, $Val extends AppState>
       return _then(_value.copyWith(session: value) as $Val);
     });
   }
+
+  /// Create a copy of AppState
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $AlarmSettingsCopyWith<$Res> get alarmSettings {
+    return $AlarmSettingsCopyWith<$Res>(_value.alarmSettings, (value) {
+      return _then(_value.copyWith(alarmSettings: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -133,6 +152,7 @@ abstract class _$$AppStateImplCopyWith<$Res>
   $Res call({
     DeviceModeState deviceMode,
     SessionState session,
+    AlarmSettings alarmSettings,
     bool isVideoInitialized,
     bool isLoading,
     String? error,
@@ -142,6 +162,8 @@ abstract class _$$AppStateImplCopyWith<$Res>
   $DeviceModeStateCopyWith<$Res> get deviceMode;
   @override
   $SessionStateCopyWith<$Res> get session;
+  @override
+  $AlarmSettingsCopyWith<$Res> get alarmSettings;
 }
 
 /// @nodoc
@@ -160,6 +182,7 @@ class __$$AppStateImplCopyWithImpl<$Res>
   $Res call({
     Object? deviceMode = null,
     Object? session = null,
+    Object? alarmSettings = null,
     Object? isVideoInitialized = null,
     Object? isLoading = null,
     Object? error = freezed,
@@ -176,6 +199,11 @@ class __$$AppStateImplCopyWithImpl<$Res>
                 ? _value.session
                 : session // ignore: cast_nullable_to_non_nullable
                     as SessionState,
+        alarmSettings:
+            null == alarmSettings
+                ? _value.alarmSettings
+                : alarmSettings // ignore: cast_nullable_to_non_nullable
+                    as AlarmSettings,
         isVideoInitialized:
             null == isVideoInitialized
                 ? _value.isVideoInitialized
@@ -202,6 +230,7 @@ class _$AppStateImpl extends _AppState {
   const _$AppStateImpl({
     this.deviceMode = const DeviceModeState(),
     this.session = const SessionState(),
+    this.alarmSettings = const AlarmSettings(),
     this.isVideoInitialized = false,
     this.isLoading = false,
     this.error,
@@ -215,6 +244,9 @@ class _$AppStateImpl extends _AppState {
   final SessionState session;
   @override
   @JsonKey()
+  final AlarmSettings alarmSettings;
+  @override
+  @JsonKey()
   final bool isVideoInitialized;
   @override
   @JsonKey()
@@ -224,7 +256,7 @@ class _$AppStateImpl extends _AppState {
 
   @override
   String toString() {
-    return 'AppState(deviceMode: $deviceMode, session: $session, isVideoInitialized: $isVideoInitialized, isLoading: $isLoading, error: $error)';
+    return 'AppState(deviceMode: $deviceMode, session: $session, alarmSettings: $alarmSettings, isVideoInitialized: $isVideoInitialized, isLoading: $isLoading, error: $error)';
   }
 
   @override
@@ -235,6 +267,8 @@ class _$AppStateImpl extends _AppState {
             (identical(other.deviceMode, deviceMode) ||
                 other.deviceMode == deviceMode) &&
             (identical(other.session, session) || other.session == session) &&
+            (identical(other.alarmSettings, alarmSettings) ||
+                other.alarmSettings == alarmSettings) &&
             (identical(other.isVideoInitialized, isVideoInitialized) ||
                 other.isVideoInitialized == isVideoInitialized) &&
             (identical(other.isLoading, isLoading) ||
@@ -247,6 +281,7 @@ class _$AppStateImpl extends _AppState {
     runtimeType,
     deviceMode,
     session,
+    alarmSettings,
     isVideoInitialized,
     isLoading,
     error,
@@ -265,6 +300,7 @@ abstract class _AppState extends AppState {
   const factory _AppState({
     final DeviceModeState deviceMode,
     final SessionState session,
+    final AlarmSettings alarmSettings,
     final bool isVideoInitialized,
     final bool isLoading,
     final String? error,
@@ -275,6 +311,8 @@ abstract class _AppState extends AppState {
   DeviceModeState get deviceMode;
   @override
   SessionState get session;
+  @override
+  AlarmSettings get alarmSettings;
   @override
   bool get isVideoInitialized;
   @override

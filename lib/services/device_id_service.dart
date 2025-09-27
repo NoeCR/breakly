@@ -27,7 +27,7 @@ class DeviceIdService {
     final platform = Platform.operatingSystem;
     final random = (timestamp % 100000).toString().padLeft(5, '0');
 
-    return '${_deviceIdPrefix}${platform}_${timestamp}_$random';
+    return '$_deviceIdPrefix${platform}_${timestamp}_$random';
   }
 
   /// Regenera el ID del dispositivo (útil para testing o reset)
@@ -47,4 +47,3 @@ class DeviceIdService {
     };
   }
 }
-

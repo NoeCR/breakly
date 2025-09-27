@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import '../models/app_state.dart';
 import '../models/device_mode_state.dart';
+import '../models/alarm_settings.dart';
 import '../interfaces/preferences_repository.dart';
 import '../interfaces/notification_service.dart';
 import '../interfaces/device_mode_service.dart';
@@ -55,6 +56,7 @@ class BreaklyNotifier extends StateNotifier<AppState> {
       }
 
       await _loadMinutesTarget();
+      await _loadAlarmSettings();
       _listenToDeviceModeChanges();
 
       state = state.copyWith(isLoading: false);
@@ -68,6 +70,11 @@ class BreaklyNotifier extends StateNotifier<AppState> {
     state = state.copyWith(
       session: state.session.copyWith(minutesTarget: minutesTarget),
     );
+  }
+
+  Future<void> _loadAlarmSettings() async {
+    final alarmSettings = await _preferencesRepository.getAlarmSettings();
+    state = state.copyWith(alarmSettings: alarmSettings);
   }
 
   Future<void> _restoreSessionIfAny() async {
@@ -193,6 +200,9 @@ class BreaklyNotifier extends StateNotifier<AppState> {
           _notificationShown = true;
           // Mostrar notificación inmediata usando el timer
           _showImmediateNotification();
+
+          // Reproducir alarma sonora si está habilitada
+          _playAlarmSound();
         }
 
         state = state.copyWith(
@@ -216,6 +226,27 @@ class BreaklyNotifier extends StateNotifier<AppState> {
       await _notificationService.scheduleEndNotification(0);
     } catch (e) {
       // Handle error silently
+    }
+  }
+
+  Future<void> _playAlarmSound() async {
+    try {
+      if (kDebugMode) {
+        print('🔊 Attempting to play alarm sound...');
+        print('🔊 Alarm settings: ${state.alarmSettings.isEnabled}');
+        print('🔊 Sound: ${state.alarmSettings.soundName}');
+        print('🔊 Duration: ${state.alarmSettings.duration} seconds');
+      }
+
+      await _notificationService.playAlarmSound(state.alarmSettings);
+
+      if (kDebugMode) {
+        print('✅ Alarm sound played successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error playing alarm sound: $e');
+      }
     }
   }
 
@@ -302,6 +333,50 @@ class BreaklyNotifier extends StateNotifier<AppState> {
     await _sessionSyncService.forceSync();
   }
 
+  /// Actualiza la configuración de alarma
+  Future<void> updateAlarmSettings(AlarmSettings alarmSettings) async {
+    state = state.copyWith(alarmSettings: alarmSettings);
+    await _preferencesRepository.setAlarmSettings(alarmSettings);
+  }
+
+  /// Habilita o deshabilita la alarma
+  Future<void> toggleAlarmEnabled(bool enabled) async {
+    final updatedSettings = state.alarmSettings.copyWith(isEnabled: enabled);
+    await updateAlarmSettings(updatedSettings);
+  }
+
+  /// Cambia el sonido de la alarma
+  Future<void> updateAlarmSound(String soundUri, String soundName) async {
+    final updatedSettings = state.alarmSettings.copyWith(
+      soundUri: soundUri,
+      soundName: soundName,
+    );
+    await updateAlarmSettings(updatedSettings);
+  }
+
+  /// Actualiza el volumen de la alarma
+  Future<void> updateAlarmVolume(int volume) async {
+    final updatedSettings = state.alarmSettings.copyWith(volume: volume);
+    await updateAlarmSettings(updatedSettings);
+  }
+
+  /// Actualiza la duración de la alarma
+  Future<void> updateAlarmDuration(int duration) async {
+    final updatedSettings = state.alarmSettings.copyWith(duration: duration);
+    await updateAlarmSettings(updatedSettings);
+  }
+
+  /// Detiene la alarma sonora manualmente
+  Future<void> stopAlarmSound() async {
+    await _notificationService.stopAlarmSound();
+  }
+
+  /// Reproduce la alarma sonora para pruebas
+  Future<void> playTestAlarm() async {
+    await _notificationService.playAlarmSound(state.alarmSettings);
+  }
+
+  @override
   void dispose() {
     _deviceModeSubscription?.cancel();
     _stopTimer();

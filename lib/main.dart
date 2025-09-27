@@ -1,4 +1,5 @@
 import 'package:breakly/bottom_sheets/add_minutes_bottom_sheet.dart';
+import 'package:breakly/bottom_sheets/alarm_settings_bottom_sheet.dart';
 import 'package:breakly/widgets/add_duration_chip.dart';
 import 'package:breakly/widgets/clear_chip.dart';
 import 'package:breakly/widgets/duration_chip.dart';
@@ -102,6 +103,10 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
         ),
       );
     }
+  }
+
+  void _showAlarmSettings() {
+    AlarmSettingsBottomSheet.show(context);
   }
 
   @override
@@ -266,36 +271,68 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
               ),
             ),
           ),
-          // Notification status button - positioned at top right, below status bar
+          // Top buttons - positioned at top right, below status bar
           // Solo mostrar cuando NO está activo el modo DND
           if (!appState.isAnyModeActive)
             Positioned(
               top: 0,
               right: 16,
               child: SafeArea(
-                child: GestureDetector(
-                  onTap: _showAlarmPermissionInfo,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.95),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Alarm settings button
+                    GestureDetector(
+                      onTap: _showAlarmSettings,
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: const Icon(
+                          Icons.alarm,
+                          color: Colors.orange,
+                          size: 24,
+                        ),
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.access_time_rounded,
-                      color: Colors.black87,
-                      size: 24,
+                    const SizedBox(width: 12),
+                    // Notification status button
+                    GestureDetector(
+                      onTap: _showAlarmPermissionInfo,
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.access_time_rounded,
+                          color: Colors.black87,
+                          size: 24,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
