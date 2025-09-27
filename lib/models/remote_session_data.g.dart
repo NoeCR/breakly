@@ -10,7 +10,7 @@ _$RemoteSessionDataImpl _$$RemoteSessionDataImplFromJson(
   Map<String, dynamic> json,
 ) => _$RemoteSessionDataImpl(
   id: json['id'] as String?,
-  userId: json['userId'] as String?,
+  userId: json['userId'] as String,
   deviceId: json['deviceId'] as String,
   sessionId: json['sessionId'] as String,
   activatedAt:
@@ -25,6 +25,7 @@ _$RemoteSessionDataImpl _$$RemoteSessionDataImplFromJson(
   isAirplaneMode: json['isAirplaneMode'] as bool? ?? false,
   ringerMode: json['ringerMode'] as String? ?? 'normal',
   appVersion: json['appVersion'] as String?,
+  phoneNumberAvailable: json['phoneNumberAvailable'] as bool? ?? false,
   lastSyncAt:
       json['lastSyncAt'] == null
           ? null
@@ -55,6 +56,7 @@ Map<String, dynamic> _$$RemoteSessionDataImplToJson(
   'isAirplaneMode': instance.isAirplaneMode,
   'ringerMode': instance.ringerMode,
   'appVersion': instance.appVersion,
+  'phoneNumberAvailable': instance.phoneNumberAvailable,
   'lastSyncAt': instance.lastSyncAt?.toIso8601String(),
   'createdAt': instance.createdAt?.toIso8601String(),
   'updatedAt': instance.updatedAt?.toIso8601String(),

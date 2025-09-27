@@ -19,7 +19,7 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
 
       final response =
           await _client
-              .from('sessions')
+              .from('device_sessions')
               .select()
               .eq('device_id', deviceId)
               .eq('is_active', true)
@@ -49,7 +49,7 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
 
       final response =
           await _client
-              .from('sessions')
+              .from('device_sessions')
               .select()
               .eq('session_id', sessionId)
               .maybeSingle();
@@ -82,7 +82,11 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
       ); // No incluir ID para que se genere automáticamente
 
       final response =
-          await _client.from('sessions').insert(sessionData).select().single();
+          await _client
+              .from('device_sessions')
+              .insert(sessionData)
+              .select()
+              .single();
 
       final createdSession = RemoteSessionData.fromSupabaseJson(response);
       _updateSyncStatus(SyncStatus.synced);
@@ -101,19 +105,15 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
     try {
       _updateSyncStatus(SyncStatus.syncing);
 
-      if (session.id == null) {
-        throw SyncException('No se puede actualizar una sesión sin ID');
-      }
-
       final sessionData = session.markAsSynced().toSupabaseJson();
-      sessionData.remove('id'); // No actualizar el ID
+      sessionData.remove('id'); // No incluir ID para upsert
       sessionData.remove('created_at'); // No actualizar fecha de creación
 
+      // Usar upsert basado en device_id (único por dispositivo)
       final response =
           await _client
-              .from('sessions')
-              .update(sessionData)
-              .eq('id', session.id!)
+              .from('device_sessions')
+              .upsert(sessionData, onConflict: 'device_id')
               .select()
               .single();
 
@@ -135,7 +135,7 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
       _updateSyncStatus(SyncStatus.syncing);
 
       await _client
-          .from('sessions')
+          .from('device_sessions')
           .update({
             'is_active': false,
             'updated_at': DateTime.now().toIso8601String(),
@@ -157,7 +157,10 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
     try {
       _updateSyncStatus(SyncStatus.syncing);
 
-      await _client.from('sessions').delete().eq('session_id', sessionId);
+      await _client
+          .from('device_sessions')
+          .delete()
+          .eq('session_id', sessionId);
 
       _updateSyncStatus(SyncStatus.synced);
     } catch (e) {
@@ -178,7 +181,7 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
-          table: 'sessions',
+          table: 'device_sessions',
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
             column: 'session_id',
@@ -234,7 +237,7 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
-          table: 'sessions',
+          table: 'device_sessions',
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
             column: 'device_id',
@@ -323,7 +326,7 @@ class SupabaseSessionRepository implements RemoteSessionRepository {
   Future<bool> isConnected() async {
     try {
       // Hacer una query simple para verificar conectividad
-      await _client.from('sessions').select('id').limit(1);
+      await _client.from('device_sessions').select('id').limit(1);
       return true;
     } catch (e) {
       return false;

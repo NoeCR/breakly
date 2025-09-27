@@ -100,6 +100,9 @@ class BreaklyNotifier extends StateNotifier<AppState> {
       );
 
       _handleActiveState(active);
+
+      // Sincronizar cambios de estado del dispositivo después de actualizar el estado
+      _sessionSyncService.syncCurrentState(state);
     });
   }
 
@@ -123,6 +126,10 @@ class BreaklyNotifier extends StateNotifier<AppState> {
       _onVideoStateChanged?.call(true);
     } else {
       _notificationShown = false; // Reset notification flag
+
+      // Sincronizar estado final antes de resetear la sesión
+      _sessionSyncService.syncCurrentState(state);
+
       state = state.copyWith(
         session: state.session.copyWith(
           activatedAt: null,
