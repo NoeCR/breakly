@@ -27,8 +27,8 @@ class DeviceModeServiceImpl implements DeviceModeService {
   Future<void> setDoNotDisturb(bool enable) async {
     try {
       await _methods.invokeMethod('setDoNotDisturb', {'enable': enable});
-    } catch (_) {
-      // Handle error silently or log it
+    } catch (e) {
+      // Handle error silently - no interrumpir la funcionalidad principal
     }
   }
 
@@ -36,8 +36,8 @@ class DeviceModeServiceImpl implements DeviceModeService {
   Future<void> toggleRinger(String mode) async {
     try {
       await _methods.invokeMethod('toggleRinger', {'mode': mode});
-    } catch (_) {
-      // Handle error silently or log it
+    } catch (e) {
+      // Handle error silently - no interrumpir la funcionalidad principal
     }
   }
 
@@ -45,8 +45,8 @@ class DeviceModeServiceImpl implements DeviceModeService {
   Future<void> openDoNotDisturbSettings() async {
     try {
       await _methods.invokeMethod('openDoNotDisturbSettings');
-    } catch (_) {
-      // Handle error silently or log it
+    } catch (e) {
+      // Handle error silently - no interrumpir la funcionalidad principal
     }
   }
 }

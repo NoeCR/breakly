@@ -21,7 +21,6 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -49,18 +48,30 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _videoController =
-        VideoPlayerController.asset('assets/black_hole.mp4')
-          ..setLooping(true)
-          ..setVolume(0)
-          ..initialize().then((_) {
-            if (mounted) {
-              final notifier = ref.read(breaklyNotifierProvider.notifier);
-              notifier.setVideoInitialized(true);
-              // Registrar el callback para controlar el video
-              notifier.setVideoController(_controlVideo);
-            }
-          });
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      _videoController =
+          VideoPlayerController.asset('assets/black_hole.mp4')
+            ..setLooping(true)
+            ..setVolume(0);
+
+      await _videoController!.initialize();
+
+      if (mounted) {
+        final notifier = ref.read(breaklyNotifierProvider.notifier);
+        notifier.setVideoInitialized(true);
+        notifier.setVideoController(_controlVideo);
+      }
+    } catch (e) {
+      // Si hay error inicializando el video, continuar sin él
+      if (mounted) {
+        final notifier = ref.read(breaklyNotifierProvider.notifier);
+        notifier.setVideoInitialized(false);
+      }
+    }
   }
 
   void _controlVideo(bool shouldPlay) {
@@ -115,7 +126,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
     final appState = ref.watch(breaklyNotifierProvider);
     final notifier = ref.read(breaklyNotifierProvider.notifier);
 
-    final idleBg = const DecorationImage(
+    const idleBg = DecorationImage(
       image: AssetImage('assets/canyon.avif'),
       fit: BoxFit.cover,
     );

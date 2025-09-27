@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
 import '../models/app_state.dart';
 import '../models/device_mode_state.dart';
 import '../interfaces/preferences_repository.dart';
@@ -168,9 +167,6 @@ class BreaklyNotifier extends StateNotifier<AppState> {
   }
 
   Future<void> _cancelEndNotification() async {
-    if (kDebugMode) {
-      print('🗑️ Cancelling end notification');
-    }
     await _notificationService.cancelEndNotification();
   }
 
@@ -183,13 +179,6 @@ class BreaklyNotifier extends StateNotifier<AppState> {
 
         // Verificar si se alcanzó el tiempo objetivo
         if (elapsed >= targetDuration && !_notificationShown) {
-          if (kDebugMode) {
-            print(
-              '⏰ Target time reached! Elapsed: ${elapsed.inMinutes} minutes, Target: ${state.session.minutesTarget} minutes',
-            );
-            print('🔔 Showing immediate notification via timer...');
-          }
-
           _notificationShown = true;
           // Mostrar notificación inmediata usando el timer
           _showImmediateNotification();
@@ -211,11 +200,10 @@ class BreaklyNotifier extends StateNotifier<AppState> {
     try {
       // Cancelar la notificación programada para evitar duplicados
       await _cancelEndNotification();
-
       // Mostrar notificación inmediata
       await _notificationService.scheduleEndNotification(0);
     } catch (e) {
-      // Handle error silently
+      // Handle error silently - no interrumpir la funcionalidad principal
     }
   }
 
@@ -245,8 +233,8 @@ class BreaklyNotifier extends StateNotifier<AppState> {
         await _deviceModeService.setDoNotDisturb(false);
       }
       await _deviceModeService.toggleRinger('normal');
-    } catch (_) {
-      // Handle error silently or log it
+    } catch (e) {
+      // Handle error silently - no interrumpir la funcionalidad principal
     }
   }
 
@@ -259,11 +247,13 @@ class BreaklyNotifier extends StateNotifier<AppState> {
         // Fallback: silenciar y abrir ajustes para conceder permiso DND
         try {
           await _deviceModeService.toggleRinger('silent');
-        } catch (_) {}
+        } catch (e) {
+          // Handle error silently
+        }
         await _deviceModeService.openDoNotDisturbSettings();
       }
-    } catch (_) {
-      // Handle error silently or log it
+    } catch (e) {
+      // Handle error silently - no interrumpir la funcionalidad principal
     }
   }
 

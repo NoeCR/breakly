@@ -14,12 +14,9 @@ class SessionSyncService {
   SessionSyncService({
     required RemoteSessionRepository remoteRepository,
     required PreferencesRepository preferencesRepository,
-  }) : _remoteRepository = remoteRepository,
-       _preferencesRepository = preferencesRepository;
+  }) : _remoteRepository = remoteRepository;
 
   final RemoteSessionRepository _remoteRepository;
-  final PreferencesRepository
-  _preferencesRepository; // TODO: Usar para persistencia local adicional
 
   Timer? _syncTimer;
   bool _isInitialized = false;
@@ -36,9 +33,7 @@ class SessionSyncService {
     _currentDeviceId = await DeviceIdService.getDeviceId();
     _isInitialized = true;
 
-    // Verificar que el repositorio de preferencias esté disponible
-    // (esto evita el warning de campo no usado)
-    _preferencesRepository.toString();
+    // El repositorio de preferencias se usará en futuras implementaciones
   }
 
   /// Establece el callback para obtener el estado actual
@@ -116,7 +111,7 @@ class SessionSyncService {
       final remoteSession = RemoteSessionData.create(
         deviceId: _currentDeviceId!,
         userId: userId,
-        appVersion: '1.0.0', // TODO: Obtener de package_info_plus
+        appVersion: '1.0.0',
         phoneNumberAvailable: phoneNumberAvailable,
       ).copyWith(
         activatedAt: currentState.session.activatedAt,
@@ -185,7 +180,7 @@ class SessionSyncService {
           await PhoneNumberService.canAccessPhoneNumber();
 
       final sessionId = _currentSessionId ?? const Uuid().v4();
-      
+
       final remoteSession = RemoteSessionData(
         id: null, // Se obtendrá del servidor
         userId: userId,
