@@ -6,6 +6,8 @@ import '../models/app_state.dart';
 import '../models/session_state.dart';
 import '../models/device_mode_state.dart';
 import 'device_id_service.dart';
+import 'phone_number_service.dart';
+import 'package:uuid/uuid.dart';
 
 /// Servicio que maneja la sincronización entre el estado local y remoto
 class SessionSyncService {
@@ -73,7 +75,6 @@ class SessionSyncService {
   /// Sincroniza el estado actual con el remoto
   Future<void> syncCurrentState(AppState currentState) async {
     if (!_isInitialized) await initialize();
-    if (!currentState.isSessionActive) return;
 
     try {
       await _syncLocalToRemote(currentState);
@@ -107,9 +108,16 @@ class SessionSyncService {
     if (!_isInitialized) await initialize();
 
     try {
+      // Generar user_id basado en número de teléfono cifrado
+      final userId = await PhoneNumberService.generateUserId(_currentDeviceId!);
+      final phoneNumberAvailable =
+          await PhoneNumberService.canAccessPhoneNumber();
+
       final remoteSession = RemoteSessionData.create(
         deviceId: _currentDeviceId!,
+        userId: userId,
         appVersion: '1.0.0', // TODO: Obtener de package_info_plus
+        phoneNumberAvailable: phoneNumberAvailable,
       ).copyWith(
         activatedAt: currentState.session.activatedAt,
         elapsedSeconds: currentState.session.elapsed.inSeconds,
@@ -170,18 +178,19 @@ class SessionSyncService {
 
   /// Sincroniza el estado local con el remoto
   Future<void> _syncLocalToRemote(AppState currentState) async {
-    if (_currentSessionId == null) {
-      // Crear nueva sesión remota
-      await createRemoteSession(currentState);
-      return;
-    }
-
     try {
-      // Actualizar sesión existente
+      // Generar user_id basado en número de teléfono cifrado
+      final userId = await PhoneNumberService.generateUserId(_currentDeviceId!);
+      final phoneNumberAvailable =
+          await PhoneNumberService.canAccessPhoneNumber();
+
+      final sessionId = _currentSessionId ?? const Uuid().v4();
+      
       final remoteSession = RemoteSessionData(
         id: null, // Se obtendrá del servidor
+        userId: userId,
         deviceId: _currentDeviceId!,
-        sessionId: _currentSessionId!,
+        sessionId: sessionId,
         activatedAt: currentState.session.activatedAt,
         elapsedSeconds: currentState.session.elapsed.inSeconds,
         minutesTarget: currentState.session.minutesTarget,
@@ -191,9 +200,12 @@ class SessionSyncService {
         isAirplaneMode: currentState.deviceMode.isAirplaneMode,
         ringerMode: currentState.deviceMode.ringerMode,
         appVersion: '1.0.0',
+        phoneNumberAvailable: phoneNumberAvailable,
       );
 
-      await _remoteRepository.updateSession(remoteSession);
+      // Usar upsert para insertar o actualizar
+      final result = await _remoteRepository.updateSession(remoteSession);
+      _currentSessionId = result.sessionId;
     } catch (e) {
       // Log error
     }

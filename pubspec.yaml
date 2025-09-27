@@ -52,6 +52,9 @@ dependencies:
   supabase_flutter: ^2.5.6
   uuid: ^4.4.0
   
+  # Encryption
+  crypto: ^3.0.3
+  
   # Environment variables
   flutter_dotenv: ^5.1.0
 

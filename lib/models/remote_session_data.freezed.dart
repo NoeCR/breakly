@@ -23,8 +23,8 @@ RemoteSessionData _$RemoteSessionDataFromJson(Map<String, dynamic> json) {
 mixin _$RemoteSessionData {
   String? get id =>
       throw _privateConstructorUsedError; // UUID de la fila en la base de datos
-  String? get userId =>
-      throw _privateConstructorUsedError; // UUID del usuario (opcional)
+  String get userId =>
+      throw _privateConstructorUsedError; // Número de teléfono cifrado o device_id fallback
   String get deviceId =>
       throw _privateConstructorUsedError; // Identificador único del dispositivo
   String get sessionId =>
@@ -40,6 +40,8 @@ mixin _$RemoteSessionData {
   bool get isAirplaneMode => throw _privateConstructorUsedError;
   String get ringerMode => throw _privateConstructorUsedError; // Metadatos
   String? get appVersion => throw _privateConstructorUsedError;
+  bool get phoneNumberAvailable =>
+      throw _privateConstructorUsedError; // Si se pudo obtener el número de teléfono
   DateTime? get lastSyncAt => throw _privateConstructorUsedError;
   DateTime? get createdAt => throw _privateConstructorUsedError;
   DateTime? get updatedAt => throw _privateConstructorUsedError;
@@ -63,7 +65,7 @@ abstract class $RemoteSessionDataCopyWith<$Res> {
   @useResult
   $Res call({
     String? id,
-    String? userId,
+    String userId,
     String deviceId,
     String sessionId,
     DateTime? activatedAt,
@@ -75,6 +77,7 @@ abstract class $RemoteSessionDataCopyWith<$Res> {
     bool isAirplaneMode,
     String ringerMode,
     String? appVersion,
+    bool phoneNumberAvailable,
     DateTime? lastSyncAt,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -97,7 +100,7 @@ class _$RemoteSessionDataCopyWithImpl<$Res, $Val extends RemoteSessionData>
   @override
   $Res call({
     Object? id = freezed,
-    Object? userId = freezed,
+    Object? userId = null,
     Object? deviceId = null,
     Object? sessionId = null,
     Object? activatedAt = freezed,
@@ -109,6 +112,7 @@ class _$RemoteSessionDataCopyWithImpl<$Res, $Val extends RemoteSessionData>
     Object? isAirplaneMode = null,
     Object? ringerMode = null,
     Object? appVersion = freezed,
+    Object? phoneNumberAvailable = null,
     Object? lastSyncAt = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -121,10 +125,10 @@ class _$RemoteSessionDataCopyWithImpl<$Res, $Val extends RemoteSessionData>
                     : id // ignore: cast_nullable_to_non_nullable
                         as String?,
             userId:
-                freezed == userId
+                null == userId
                     ? _value.userId
                     : userId // ignore: cast_nullable_to_non_nullable
-                        as String?,
+                        as String,
             deviceId:
                 null == deviceId
                     ? _value.deviceId
@@ -180,6 +184,11 @@ class _$RemoteSessionDataCopyWithImpl<$Res, $Val extends RemoteSessionData>
                     ? _value.appVersion
                     : appVersion // ignore: cast_nullable_to_non_nullable
                         as String?,
+            phoneNumberAvailable:
+                null == phoneNumberAvailable
+                    ? _value.phoneNumberAvailable
+                    : phoneNumberAvailable // ignore: cast_nullable_to_non_nullable
+                        as bool,
             lastSyncAt:
                 freezed == lastSyncAt
                     ? _value.lastSyncAt
@@ -212,7 +221,7 @@ abstract class _$$RemoteSessionDataImplCopyWith<$Res>
   @useResult
   $Res call({
     String? id,
-    String? userId,
+    String userId,
     String deviceId,
     String sessionId,
     DateTime? activatedAt,
@@ -224,6 +233,7 @@ abstract class _$$RemoteSessionDataImplCopyWith<$Res>
     bool isAirplaneMode,
     String ringerMode,
     String? appVersion,
+    bool phoneNumberAvailable,
     DateTime? lastSyncAt,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -245,7 +255,7 @@ class __$$RemoteSessionDataImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = freezed,
-    Object? userId = freezed,
+    Object? userId = null,
     Object? deviceId = null,
     Object? sessionId = null,
     Object? activatedAt = freezed,
@@ -257,6 +267,7 @@ class __$$RemoteSessionDataImplCopyWithImpl<$Res>
     Object? isAirplaneMode = null,
     Object? ringerMode = null,
     Object? appVersion = freezed,
+    Object? phoneNumberAvailable = null,
     Object? lastSyncAt = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -269,10 +280,10 @@ class __$$RemoteSessionDataImplCopyWithImpl<$Res>
                 : id // ignore: cast_nullable_to_non_nullable
                     as String?,
         userId:
-            freezed == userId
+            null == userId
                 ? _value.userId
                 : userId // ignore: cast_nullable_to_non_nullable
-                    as String?,
+                    as String,
         deviceId:
             null == deviceId
                 ? _value.deviceId
@@ -328,6 +339,11 @@ class __$$RemoteSessionDataImplCopyWithImpl<$Res>
                 ? _value.appVersion
                 : appVersion // ignore: cast_nullable_to_non_nullable
                     as String?,
+        phoneNumberAvailable:
+            null == phoneNumberAvailable
+                ? _value.phoneNumberAvailable
+                : phoneNumberAvailable // ignore: cast_nullable_to_non_nullable
+                    as bool,
         lastSyncAt:
             freezed == lastSyncAt
                 ? _value.lastSyncAt
@@ -353,7 +369,7 @@ class __$$RemoteSessionDataImplCopyWithImpl<$Res>
 class _$RemoteSessionDataImpl extends _RemoteSessionData {
   const _$RemoteSessionDataImpl({
     this.id,
-    this.userId,
+    required this.userId,
     required this.deviceId,
     required this.sessionId,
     this.activatedAt,
@@ -365,6 +381,7 @@ class _$RemoteSessionDataImpl extends _RemoteSessionData {
     this.isAirplaneMode = false,
     this.ringerMode = 'normal',
     this.appVersion,
+    this.phoneNumberAvailable = false,
     this.lastSyncAt,
     this.createdAt,
     this.updatedAt,
@@ -377,8 +394,8 @@ class _$RemoteSessionDataImpl extends _RemoteSessionData {
   final String? id;
   // UUID de la fila en la base de datos
   @override
-  final String? userId;
-  // UUID del usuario (opcional)
+  final String userId;
+  // Número de teléfono cifrado o device_id fallback
   @override
   final String deviceId;
   // Identificador único del dispositivo
@@ -414,6 +431,10 @@ class _$RemoteSessionDataImpl extends _RemoteSessionData {
   @override
   final String? appVersion;
   @override
+  @JsonKey()
+  final bool phoneNumberAvailable;
+  // Si se pudo obtener el número de teléfono
+  @override
   final DateTime? lastSyncAt;
   @override
   final DateTime? createdAt;
@@ -422,7 +443,7 @@ class _$RemoteSessionDataImpl extends _RemoteSessionData {
 
   @override
   String toString() {
-    return 'RemoteSessionData(id: $id, userId: $userId, deviceId: $deviceId, sessionId: $sessionId, activatedAt: $activatedAt, elapsedSeconds: $elapsedSeconds, minutesTarget: $minutesTarget, isCustomMinutes: $isCustomMinutes, isActive: $isActive, isDoNotDisturb: $isDoNotDisturb, isAirplaneMode: $isAirplaneMode, ringerMode: $ringerMode, appVersion: $appVersion, lastSyncAt: $lastSyncAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'RemoteSessionData(id: $id, userId: $userId, deviceId: $deviceId, sessionId: $sessionId, activatedAt: $activatedAt, elapsedSeconds: $elapsedSeconds, minutesTarget: $minutesTarget, isCustomMinutes: $isCustomMinutes, isActive: $isActive, isDoNotDisturb: $isDoNotDisturb, isAirplaneMode: $isAirplaneMode, ringerMode: $ringerMode, appVersion: $appVersion, phoneNumberAvailable: $phoneNumberAvailable, lastSyncAt: $lastSyncAt, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -454,6 +475,8 @@ class _$RemoteSessionDataImpl extends _RemoteSessionData {
                 other.ringerMode == ringerMode) &&
             (identical(other.appVersion, appVersion) ||
                 other.appVersion == appVersion) &&
+            (identical(other.phoneNumberAvailable, phoneNumberAvailable) ||
+                other.phoneNumberAvailable == phoneNumberAvailable) &&
             (identical(other.lastSyncAt, lastSyncAt) ||
                 other.lastSyncAt == lastSyncAt) &&
             (identical(other.createdAt, createdAt) ||
@@ -479,6 +502,7 @@ class _$RemoteSessionDataImpl extends _RemoteSessionData {
     isAirplaneMode,
     ringerMode,
     appVersion,
+    phoneNumberAvailable,
     lastSyncAt,
     createdAt,
     updatedAt,
@@ -504,7 +528,7 @@ class _$RemoteSessionDataImpl extends _RemoteSessionData {
 abstract class _RemoteSessionData extends RemoteSessionData {
   const factory _RemoteSessionData({
     final String? id,
-    final String? userId,
+    required final String userId,
     required final String deviceId,
     required final String sessionId,
     final DateTime? activatedAt,
@@ -516,6 +540,7 @@ abstract class _RemoteSessionData extends RemoteSessionData {
     final bool isAirplaneMode,
     final String ringerMode,
     final String? appVersion,
+    final bool phoneNumberAvailable,
     final DateTime? lastSyncAt,
     final DateTime? createdAt,
     final DateTime? updatedAt,
@@ -528,7 +553,7 @@ abstract class _RemoteSessionData extends RemoteSessionData {
   @override
   String? get id; // UUID de la fila en la base de datos
   @override
-  String? get userId; // UUID del usuario (opcional)
+  String get userId; // Número de teléfono cifrado o device_id fallback
   @override
   String get deviceId; // Identificador único del dispositivo
   @override
@@ -552,6 +577,8 @@ abstract class _RemoteSessionData extends RemoteSessionData {
   String get ringerMode; // Metadatos
   @override
   String? get appVersion;
+  @override
+  bool get phoneNumberAvailable; // Si se pudo obtener el número de teléfono
   @override
   DateTime? get lastSyncAt;
   @override

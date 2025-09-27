@@ -8,7 +8,7 @@ part 'remote_session_data.g.dart';
 class RemoteSessionData with _$RemoteSessionData {
   const factory RemoteSessionData({
     String? id, // UUID de la fila en la base de datos
-    String? userId, // UUID del usuario (opcional)
+    required String userId, // Número de teléfono cifrado o device_id fallback
     required String deviceId, // Identificador único del dispositivo
     required String sessionId, // UUID de la sesión
     // Estado de la sesión
@@ -25,6 +25,7 @@ class RemoteSessionData with _$RemoteSessionData {
 
     // Metadatos
     String? appVersion,
+    @Default(false) bool phoneNumberAvailable, // Si se pudo obtener el número de teléfono
     DateTime? lastSyncAt,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -38,8 +39,9 @@ class RemoteSessionData with _$RemoteSessionData {
   /// Crea una nueva sesión remota con valores por defecto
   factory RemoteSessionData.create({
     required String deviceId,
-    String? userId,
+    required String userId,
     String? appVersion,
+    bool phoneNumberAvailable = false,
   }) {
     const uuid = Uuid();
     return RemoteSessionData(
@@ -47,6 +49,7 @@ class RemoteSessionData with _$RemoteSessionData {
       sessionId: uuid.v4(),
       userId: userId,
       appVersion: appVersion,
+      phoneNumberAvailable: phoneNumberAvailable,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       lastSyncAt: DateTime.now(),
@@ -57,7 +60,7 @@ class RemoteSessionData with _$RemoteSessionData {
   Map<String, dynamic> toSupabaseJson() {
     return {
       if (id != null) 'id': id,
-      if (userId != null) 'user_id': userId,
+      'user_id': userId,
       'device_id': deviceId,
       'session_id': sessionId,
       'activated_at': activatedAt?.toIso8601String(),
@@ -69,6 +72,7 @@ class RemoteSessionData with _$RemoteSessionData {
       'is_airplane_mode': isAirplaneMode,
       'ringer_mode': ringerMode,
       if (appVersion != null) 'app_version': appVersion,
+      'phone_number_available': phoneNumberAvailable,
       'last_sync_at': lastSyncAt?.toIso8601String(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
@@ -79,7 +83,7 @@ class RemoteSessionData with _$RemoteSessionData {
   factory RemoteSessionData.fromSupabaseJson(Map<String, dynamic> json) {
     return RemoteSessionData(
       id: json['id'] as String?,
-      userId: json['user_id'] as String?,
+      userId: json['user_id'] as String,
       deviceId: json['device_id'] as String,
       sessionId: json['session_id'] as String,
       activatedAt:
@@ -94,6 +98,7 @@ class RemoteSessionData with _$RemoteSessionData {
       isAirplaneMode: json['is_airplane_mode'] as bool? ?? false,
       ringerMode: json['ringer_mode'] as String? ?? 'normal',
       appVersion: json['app_version'] as String?,
+      phoneNumberAvailable: json['phone_number_available'] as bool? ?? false,
       lastSyncAt:
           json['last_sync_at'] != null
               ? DateTime.parse(json['last_sync_at'] as String)

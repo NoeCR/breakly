@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Build
 import android.provider.Settings
+import android.telephony.TelephonyManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -17,6 +18,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val eventsChannelName = "device_modes/events"
     private val methodsChannelName = "device_modes/methods"
+    private val phoneChannelName = "phone_number/methods"
 
     private var eventSink: EventChannel.EventSink? = null
     private var registered = false
@@ -71,6 +73,17 @@ class MainActivity : FlutterActivity() {
                         "openAirplaneSettings" -> {
                             openAirplaneSettings()
                             result.success(true)
+                        }
+                        else -> result.notImplemented()
+                    }
+                }
+
+        // Canal para obtener número de teléfono
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, phoneChannelName)
+                .setMethodCallHandler { call: MethodCall, result: MethodChannel.Result ->
+                    when (call.method) {
+                        "getPhoneNumber" -> {
+                            result.success(getPhoneNumber())
                         }
                         else -> result.notImplemented()
                     }
@@ -209,5 +222,31 @@ class MainActivity : FlutterActivity() {
         val intent = Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
+    }
+
+    private fun getPhoneNumber(): String? {
+        return try {
+            val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            
+            // Verificar permisos
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (checkSelfPermission(android.Manifest.permission.READ_PHONE_STATE) 
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    return null
+                }
+            }
+            
+            // Obtener número de teléfono
+            val phoneNumber = telephonyManager.line1Number
+            
+            // Verificar que el número no esté vacío
+            if (phoneNumber.isNullOrEmpty()) {
+                null
+            } else {
+                phoneNumber
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 }
