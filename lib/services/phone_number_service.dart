@@ -70,14 +70,18 @@ class PhoneNumberService {
   /// Genera un user_id único basado en el número de teléfono cifrado
   /// Si no se puede obtener el número de teléfono, usa el device_id como fallback
   static Future<String> generateUserId(String deviceId) async {
-    final phoneNumber = await getPhoneNumber();
+    try {
+      final phoneNumber = await getPhoneNumber();
 
-    if (phoneNumber != null && phoneNumber.isNotEmpty) {
-      return encryptPhoneNumber(phoneNumber);
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        return encryptPhoneNumber(phoneNumber);
+      }
+
+      // Fallback: usar device_id si no se puede obtener el número de teléfono
+      return 'device_${deviceId.hashCode.abs()}';
+    } catch (e) {
+      return 'device_${deviceId.hashCode.abs()}';
     }
-
-    // Fallback: usar device_id si no se puede obtener el número de teléfono
-    return 'device_${deviceId.hashCode.abs()}';
   }
 
   /// Verifica si se puede obtener el número de teléfono

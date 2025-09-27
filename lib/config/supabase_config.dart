@@ -35,7 +35,8 @@ class SupabaseConfig {
       await Supabase.initialize(
         url: _supabaseUrl!,
         anonKey: _supabaseAnonKey!,
-        debug: environment == 'development',
+        debug:
+            false, // Deshabilitar debug para evitar problemas de conectividad
       );
 
       _isInitialized = true;

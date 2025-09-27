@@ -1,16 +1,8 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakly/constants/app_constants.dart';
 
 void main() {
-  group('App Constants Tests', () {
+  group('AppConstants', () {
     test('debería tener constantes de notificación definidas', () {
       // Assert
       expect(AppConstants.notificationChannelId, isNotEmpty);
@@ -34,21 +26,24 @@ void main() {
         expect(duration, greaterThan(0));
       }
     });
-  });
 
-  group('Basic Widget Tests', () {
-    testWidgets('debería crear MaterialApp correctamente', (WidgetTester tester) async {
-      // Act
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: Text('Test App'),
-          ),
-        ),
-      );
-
+    test('debería tener configuración de video definida', () {
       // Assert
-      expect(find.text('Test App'), findsOneWidget);
+      expect(AppConstants.videoAssetPath, isNotEmpty);
+      expect(AppConstants.videoAssetPath, endsWith('.mp4'));
+    });
+
+    test('debería tener configuración de validación', () {
+      // Assert
+      expect(AppConstants.minSessionDuration, greaterThan(0));
+      expect(AppConstants.maxSessionDuration, greaterThan(AppConstants.minSessionDuration));
+    });
+
+    test('debería tener configuración de tiempo', () {
+      // Assert
+      expect(AppConstants.defaultTimeout, isA<Duration>());
+      expect(AppConstants.shortTimeout, isA<Duration>());
+      expect(AppConstants.longTimeout, isA<Duration>());
     });
   });
 }

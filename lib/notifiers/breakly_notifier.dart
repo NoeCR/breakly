@@ -117,9 +117,12 @@ class BreaklyNotifier extends StateNotifier<AppState> {
         _persistStart();
         _scheduleEndNotification();
 
-        // Sincronizar con remoto
+        // Sincronizar con remoto - SIEMPRE cuando se activa
         _sessionSyncService.syncCurrentState(state);
         _sessionSyncService.startPeriodicSync();
+      } else {
+        // Si ya está activa, también sincronizar el estado actual
+        _sessionSyncService.syncCurrentState(state);
       }
       // Reproducir video cuando se activa
       _onVideoStateChanged?.call(true);

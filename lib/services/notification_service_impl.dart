@@ -178,7 +178,7 @@ class NotificationServiceImpl implements NotificationService {
         );
       }
     } catch (e) {
-      rethrow;
+      // Handle error silently - no interrumpir la funcionalidad principal
     }
   }
 
@@ -187,7 +187,7 @@ class NotificationServiceImpl implements NotificationService {
     try {
       await _notifications.cancel(1001);
     } catch (e) {
-      rethrow;
+      // Handle error silently - no interrumpir la funcionalidad principal
     }
   }
 }

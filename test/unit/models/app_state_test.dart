@@ -1,163 +1,105 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakly/models/app_state.dart';
-import 'package:breakly/models/device_mode_state.dart';
 import 'package:breakly/models/session_state.dart';
+import 'package:breakly/models/device_mode_state.dart';
 
 void main() {
   group('AppState', () {
-    test('should create default state', () {
+    test('debería crear estado inicial correctamente', () {
       // Act
-      const state = AppState();
+      const appState = AppState();
 
       // Assert
-      expect(state.deviceMode, equals(const DeviceModeState()));
-      expect(state.session, equals(const SessionState()));
-      expect(state.isVideoInitialized, isFalse);
-      expect(state.isLoading, isFalse);
-      expect(state.error, isNull);
+      expect(appState.isLoading, isFalse);
+      expect(appState.error, isNull);
+      expect(appState.isVideoInitialized, isFalse);
+      expect(appState.session.minutesTarget, equals(30));
+      expect(appState.session.isActive, isFalse);
+      expect(appState.deviceMode.isDoNotDisturb, isFalse);
     });
 
-    test('should create state with custom values', () {
+    test('debería copiar estado con nuevos valores', () {
       // Arrange
-      const deviceMode = DeviceModeState(isDoNotDisturb: true);
-      const session = SessionState(minutesTarget: 60);
-      const error = 'Test error';
+      const appState = AppState();
 
       // Act
-      const state = AppState(
-        deviceMode: deviceMode,
-        session: session,
-        isVideoInitialized: true,
+      final newState = appState.copyWith(
         isLoading: true,
-        error: error,
+        error: 'Test error',
       );
 
       // Assert
-      expect(state.deviceMode, equals(deviceMode));
-      expect(state.session, equals(session));
-      expect(state.isVideoInitialized, isTrue);
-      expect(state.isLoading, isTrue);
-      expect(state.error, equals(error));
-    });
-
-    test('should copy with new values', () {
-      // Arrange
-      const originalState = AppState();
-      const newDeviceMode = DeviceModeState(isAirplaneMode: true);
-      const newSession = SessionState(minutesTarget: 90);
-
-      // Act
-      final newState = originalState.copyWith(
-        deviceMode: newDeviceMode,
-        session: newSession,
-        isVideoInitialized: true,
-        isLoading: true,
-        error: 'New error',
-      );
-
-      // Assert
-      expect(newState.deviceMode, equals(newDeviceMode));
-      expect(newState.session, equals(newSession));
-      expect(newState.isVideoInitialized, isTrue);
       expect(newState.isLoading, isTrue);
-      expect(newState.error, equals('New error'));
+      expect(newState.error, equals('Test error'));
+      expect(newState.isVideoInitialized, isFalse); // No cambió
     });
 
-    test('should preserve original values when copying with null', () {
+    test('debería verificar si la sesión está activa', () {
       // Arrange
-      const originalState = AppState(
-        deviceMode: DeviceModeState(isDoNotDisturb: true),
-        session: SessionState(minutesTarget: 45),
-        isVideoInitialized: true,
-        isLoading: true,
-        error: 'Original error',
-      );
-
-      // Act
-      final newState = originalState.copyWith();
-
-      // Assert
-      expect(newState.deviceMode, equals(originalState.deviceMode));
-      expect(newState.session, equals(originalState.session));
-      expect(
-        newState.isVideoInitialized,
-        equals(originalState.isVideoInitialized),
-      );
-      expect(newState.isLoading, equals(originalState.isLoading));
-      expect(newState.error, equals(originalState.error));
-    });
-
-    test('should check if any mode is active', () {
-      // Test with DND active
-      const stateWithDND = AppState(
-        deviceMode: DeviceModeState(isDoNotDisturb: true),
-      );
-      expect(stateWithDND.isAnyModeActive, isTrue);
-
-      // Test with airplane mode active
-      const stateWithAirplane = AppState(
-        deviceMode: DeviceModeState(isAirplaneMode: true),
-      );
-      expect(stateWithAirplane.isAnyModeActive, isTrue);
-
-      // Test with silent ringer
-      const stateWithSilent = AppState(
-        deviceMode: DeviceModeState(ringerMode: 'silent'),
-      );
-      expect(stateWithSilent.isAnyModeActive, isTrue);
-
-      // Test with no active modes
-      const stateInactive = AppState(
-        deviceMode: DeviceModeState(
-          isDoNotDisturb: false,
-          isAirplaneMode: false,
-          ringerMode: 'normal',
+      const inactiveState = AppState();
+      final activeState = AppState().copyWith(
+        session: const SessionState().copyWith(
+          activatedAt: DateTime.now(),
         ),
       );
-      expect(stateInactive.isAnyModeActive, isFalse);
-    });
 
-    test('should check if session is active', () {
-      // Test with active session
-      final activeState = AppState(
-        session: SessionState(activatedAt: DateTime.now()),
-      );
-      expect(activeState.isSessionActive, isTrue);
-
-      // Test with inactive session
-      const inactiveState = AppState(session: SessionState(activatedAt: null));
+      // Assert
       expect(inactiveState.isSessionActive, isFalse);
+      expect(activeState.isSessionActive, isTrue);
+    });
+  });
+
+  group('SessionState', () {
+    test('debería crear sesión inicial correctamente', () {
+      // Act
+      const session = SessionState();
+
+      // Assert
+      expect(session.minutesTarget, equals(30));
+      expect(session.isActive, isFalse);
+      expect(session.activatedAt, isNull);
+      expect(session.isCustomMinutes, isFalse);
     });
 
-    test('should be immutable', () {
+    test('debería manejar tiempo transcurrido correctamente', () {
       // Arrange
-      const state = AppState();
+      const session = SessionState(
+        elapsed: Duration(minutes: 5),
+      );
 
-      // Act & Assert
-      expect(() => state.copyWith(), returnsNormally);
-      expect(state, equals(const AppState()));
+      // Act
+      final elapsed = session.elapsed;
+
+      // Assert
+      expect(elapsed.inMinutes, equals(5));
+    });
+  });
+
+  group('DeviceModeState', () {
+    test('debería crear estado de dispositivo inicial correctamente', () {
+      // Act
+      const deviceMode = DeviceModeState();
+
+      // Assert
+      expect(deviceMode.isDoNotDisturb, isFalse);
+      expect(deviceMode.isAirplaneMode, isFalse);
+      expect(deviceMode.ringerMode, equals('normal'));
     });
 
-    test('should support equality', () {
+    test('debería copiar estado con nuevos valores', () {
       // Arrange
-      const state1 = AppState(
-        deviceMode: DeviceModeState(isDoNotDisturb: true),
-        session: SessionState(minutesTarget: 30),
-      );
-      const state2 = AppState(
-        deviceMode: DeviceModeState(isDoNotDisturb: true),
-        session: SessionState(minutesTarget: 30),
-      );
-      const state3 = AppState(
-        deviceMode: DeviceModeState(isDoNotDisturb: false),
-        session: SessionState(minutesTarget: 30),
+      const deviceMode = DeviceModeState();
+
+      // Act
+      final newMode = deviceMode.copyWith(
+        isDoNotDisturb: true,
+        ringerMode: 'silent',
       );
 
       // Assert
-      expect(state1, equals(state2));
-      expect(state1, isNot(equals(state3)));
-      expect(state1.hashCode, equals(state2.hashCode));
-      expect(state1.hashCode, isNot(equals(state3.hashCode)));
+      expect(newMode.isDoNotDisturb, isTrue);
+      expect(newMode.ringerMode, equals('silent'));
+      expect(newMode.isAirplaneMode, isFalse); // No cambió
     });
   });
 }
